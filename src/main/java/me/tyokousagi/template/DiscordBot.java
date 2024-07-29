@@ -21,23 +21,39 @@ import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Properties;
 
 public class DiscordBot extends ListenerAdapter implements EventListener {
     public static JDA jda;
     public static TextChannel channel;
-    public static String TOKEN = "MTIxODAyMTYxNzk4OTQ1MTk0Nw.G5uKNZ.n761Qba1pb_iAR_ALJCtxgv-gTS6IxpM947vhA";
-    public static String GUILD_ID = "1097009104440012832";
-    public static String CHANNEL_ID ="1218021494186315786";
+    public static String TOKEN;
+    public static String GUILD_ID;
+    public static String CHANNEL_ID;
     public static final Logger LOGGER = LoggerFactory.getLogger("template-plugin");
     private static ProxyServer proxyServer;
 
+    static {
+        try (InputStream input = DiscordBot.class.getClassLoader().getResourceAsStream("config.properties")) {
+            Properties prop = new Properties();
+            if (input == null) {
+                System.out.println("Sorry, unable to find config.properties");
+            } else {
+                // load a properties file from class path, inside static method
+                prop.load(input);
+                // get the property value and assign to variables
+                TOKEN = prop.getProperty("TOKEN");
+                GUILD_ID = prop.getProperty("GUILD_ID");
+                CHANNEL_ID = prop.getProperty("CHANNEL_ID");
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
     // パスの設定
-    private static final Path WORLDS_DIR_s1 = Paths.get("D:\\minecraft_server\\servers\\s1\\world");
-    private static final Path WORLDS_DIR_s2 = Paths.get("D:\\minecraft_server\\servers\\s2\\world");
-    private static final Path BACKUPS_DIR_s1 = Paths.get("D:\\minecraft_server\\servers\\s1\\backup");
-    private static final Path BACKUPS_DIR_s2 = Paths.get("D:\\minecraft_server\\servers\\s2\\backup");
 
     static void BOT() {
         if (TOKEN == null || TOKEN.isEmpty()) {
@@ -51,26 +67,6 @@ public class DiscordBot extends ListenerAdapter implements EventListener {
                     .build();
             jda.awaitReady();
             channel = jda.getGuildById(GUILD_ID).getTextChannelById(CHANNEL_ID);
-        /*
-            // スラッシュコマンドの登録
-            jda.upsertCommand("backup", "Backup related commands")
-                    .addSubcommands(
-                            new SubcommandData("start", "Start a backup")
-                                    .addOptions(
-                                            new OptionData(OptionType.STRING, "servername", "Select the server", true)
-                                                    .addChoice("s1", "s1")
-                                                    .addChoice("s2", "s2")
-                                    ),
-                            new SubcommandData("restore", "Restore a backup")
-                                    .addOptions(
-                                            new OptionData(OptionType.STRING, "servername", "Select the server", true)
-                                                    .addChoice("s1", "s1")
-                                                    .addChoice("s2", "s2"),
-                                            new OptionData(OptionType.STRING, "backupname", "Name of the backup", true)
-                                    )
-                    )
-                    .queue();
-         */
 
             System.out.println("Bot is ready!");
         } catch (InterruptedException e) {
@@ -79,7 +75,11 @@ public class DiscordBot extends ListenerAdapter implements EventListener {
         }
     }
 
-    public static void sendEmbedMessage(Color color, String title_1, String title_2, String playerName, boolean includeAuthor) {
+    // その他のメソッドはそのまま
+
+
+
+public static void sendEmbedMessage(Color color, String title_1, String title_2, String playerName, boolean includeAuthor) {
         if (channel != null) {
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.setTitle(title_1);

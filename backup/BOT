@@ -1,0 +1,228 @@
+package me.tyokousagi.template;
+
+import com.velocitypowered.api.proxy.ProxyServer;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.events.GenericEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
+import net.dv8tion.jda.api.requests.GatewayIntent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
+import java.awt.*;
+import java.io.IOException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.EventListener;
+
+public class DiscordBot implements net.dv8tion.jda.api.hooks.EventListener {
+    public static JDA jda;
+    public static TextChannel channel;
+    public static String TOKEN = "MTI2MTY2MDI2MTcwMjQzODkxMg.GWotd4.j3lh-XGczlNVeoOakpPIwQ8CAicXfyNEPeiFmw";
+    public static String GUILD_ID = "1218982928361590947";
+    public static String CHANNEL_ID = "1218983231097933994";
+    public static final Logger LOGGER = LoggerFactory.getLogger("template-plugin");
+    private static ProxyServer proxyServer;
+
+    static void BOT() {
+        if (TOKEN == null || TOKEN.isEmpty()) {
+            throw new IllegalArgumentException("DISCORD_TOKEN environment variable is not set or empty.");
+        }
+        try {
+            jda = JDABuilder.createDefault(TOKEN)
+                    .enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT, GatewayIntent.GUILD_MEMBERS)
+                    .setActivity(Activity.playing("m1rutanのボット"))
+                    .addEventListeners(new DiscordBot())
+                    .build();
+            jda.awaitReady();
+            channel = jda.getGuildById(GUILD_ID).getTextChannelById(CHANNEL_ID);
+
+            // スラッシュコマンドの登録
+            jda.upsertCommand("backup", "Backup related commands")
+                    .addSubcommands(
+                            new SubcommandData("start", "Start a backup")
+                                    .addOptions(
+                                            new OptionData(OptionType.STRING, "servername", "Select the server", true)
+                                                    .addChoice("s1", "s1")
+                                                    .addChoice("s2", "s2")
+                                    ),
+                            new SubcommandData("restore", "Restore a backup")
+                                    .addOptions(
+                                            new OptionData(OptionType.STRING, "servername", "Select the server", true)
+                                                    .addChoice("s1", "s1")
+                                                    .addChoice("s2", "s2"),
+                                            new OptionData(OptionType.STRING, "backupname", "Name of the backup", true)
+                                    )
+                    )
+                    .queue();
+
+            System.out.println("Bot is ready!");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            System.out.println("Initialization interrupted: " + e.getMessage());
+        }
+    }
+
+    public static void sendEmbedMessage(Color color, String title_1, String title_2, String playerName, boolean includeAuthor) {
+        if (channel != null) {
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+            embedBuilder.setTitle(title_1);
+            embedBuilder.setColor(color);
+            if (includeAuthor && playerName != null && !playerName.isEmpty()) {
+                embedBuilder.setAuthor(playerName + "が" + title_2 + "しました", null, "https://mc-heads.net/avatar/" + playerName + ".png");
+            }
+            MessageEmbed embed = embedBuilder.build();
+            channel.sendMessageEmbeds(embed).queue(
+                    success -> System.out.println("メッセージが送信されました"),
+                    error -> {
+                        error.printStackTrace();
+                        System.out.println("メッセージの送信に失敗しました");
+                    }
+            );
+        } else {
+            System.out.println("チャンネルが設定されていません");
+        }
+    }
+
+    public static void sendMessageToDiscord(String message) {
+        if (channel != null) {
+            channel.sendMessage(message).queue(
+                    success -> System.out.println("Discordにメッセージが送信されました: " + message),
+                    error -> {
+                        error.printStackTrace();
+                        System.out.println("Discordへのメッセージ送信に失敗しました: " + message);
+                    }
+            );
+        } else {
+            System.out.println("チャンネルが設定されていません");
+        }
+    }
+    public void onEvent(GenericEvent event) {
+        if (event instanceof MessageReceivedEvent) {
+            onMessageReceived((MessageReceivedEvent) event);
+        }
+    }
+    public void onMessageReceived(MessageReceivedEvent event) {
+        LOGGER.info("Message received: " + event.getMessage().getContentDisplay());
+        LOGGER.info("Author: " + event.getAuthor().getName());
+        LOGGER.info("Channel: " + event.getChannel().getName());
+        LOGGER.info("Guild: " + (event.isFromGuild() ? event.getGuild().getName() : "DM"));
+        LOGGER.info("Message received: " + event.getMessage().getContentDisplay());
+
+        // ボットのメッセージは無視
+        if (event.getAuthor().isBot()) {
+            LOGGER.info("Ignoring bot message");
+            return;
+        }
+
+        // メッセージが送信されたギルドをチェック
+        if (event.isFromGuild()) {
+            LOGGER.info("Message is from guild: " + event.getGuild().getId());
+            if (event.getGuild().getId().equals(GUILD_ID)) {
+                LOGGER.info("Guild ID matches");
+                // 特定のチャンネルからのメッセージのみ処理
+                if (event.getChannel().getId().equals(CHANNEL_ID)) {
+                    LOGGER.info("Channel ID matches");
+                    String authorName = event.getAuthor().getName();
+                    String content = event.getMessage().getContentDisplay();
+
+                    LOGGER.info("Sending to Minecraft: " + authorName + ": " + content);
+                    // Minecraftのチャットに送信
+                    sendToMinecraft(authorName, content);
+                } else {
+                    LOGGER.info("Channel ID does not match. Expected: " + CHANNEL_ID + ", Actual: " + event.getChannel().getId());
+                }
+            } else {
+                LOGGER.info("Guild ID does not match. Expected: " + GUILD_ID + ", Actual: " + event.getGuild().getId());
+            }
+        } else {
+            LOGGER.info("Message is not from a guild");
+        }
+    }
+
+        public static void sendToMinecraft (String authorName, String content){
+            if (proxyServer != null) {
+                Component message = Component.text()
+                        .append(Component.text("[Discord] ", NamedTextColor.GREEN))
+                        .append(Component.text("<" + authorName + "> ", NamedTextColor.WHITE))
+                        .append(Component.text(content, NamedTextColor.WHITE))
+                        .build();
+
+                proxyServer.getAllPlayers().forEach(player -> player.sendMessage(message));
+                LOGGER.info("Sent to Minecraft: " + authorName + ": " + content);
+            } else {
+                LOGGER.error("ProxyServer is not set. Cannot send message to Minecraft.");
+            }
+        }
+
+        public static void setProxyServer (ProxyServer server){
+            proxyServer = server;
+        }
+    // バックアップ機能
+    public static void backupWorld(String serverName) {
+        Path source = Paths.get("worlds", serverName);
+        Path backup = Paths.get("backups", serverName + "_" + System.currentTimeMillis());
+
+        try {
+            Files.createDirectories(backup.getParent());
+            Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    Path destFile = backup.resolve(source.relativize(file));
+                    Files.createDirectories(destFile.getParent());
+                    Files.copy(file, destFile, StandardCopyOption.REPLACE_EXISTING);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            sendMessageToDiscord("Backup completed for server: " + serverName);
+        } catch (IOException e) {
+            LOGGER.error("Failed to backup world for server: " + serverName, e);
+            sendMessageToDiscord("Failed to backup world for server: " + serverName);
+        }
+    }
+
+    // 復元機能
+    public static void restoreWorld(String serverName, String backupName) {
+        Path backup = Paths.get("backups", backupName);
+        Path target = Paths.get("worlds", serverName);
+
+        try {
+            Files.walkFileTree(target, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    Files.delete(file);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    Files.delete(dir);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+            Files.walkFileTree(backup, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    Path destFile = target.resolve(backup.relativize(file));
+                    Files.createDirectories(destFile.getParent());
+                    Files.copy(file, destFile, StandardCopyOption.REPLACE_EXISTING);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            sendMessageToDiscord("Restore completed for server: " + serverName + " from backup: " + backupName);
+        } catch (IOException e) {
+            LOGGER.error("Failed to restore world for server: " + serverName + " from backup: " + backupName, e);
+            sendMessageToDiscord("Failed to restore world for server: " + serverName + " from backup: " + backupName);
+        }
+    }
+}

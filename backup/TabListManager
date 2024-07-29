@@ -1,0 +1,76 @@
+package me.tyokousagi.template.events;
+
+import com.velocitypowered.api.proxy.Player;
+import com.velocitypowered.api.proxy.player.TabListEntry;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextColor;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+
+public class TabListManager_test {
+
+    public static void addTablistEntry(Player targetPlayer, Player entryPlayer) {
+        Component displayName = getDisplayName(entryPlayer);
+        if (targetPlayer.getTabList().containsEntry(entryPlayer.getUniqueId())) {
+            targetPlayer.getTabList().getEntry(entryPlayer.getUniqueId()).ifPresent(entry -> entry.setDisplayName(displayName));
+        } else {
+            targetPlayer.getTabList().addEntry(
+                    TabListEntry.builder()
+                            .tabList(targetPlayer.getTabList())
+                            .profile(entryPlayer.getGameProfile())
+                            .displayName(displayName)
+                            .build()
+            );
+        }
+    }
+
+    public static void updateTablistEntry(Player targetPlayer, Collection<Player> allPlayers) {
+        targetPlayer.getTabList().clearAll();
+        for (Player entryPlayer : allPlayers) {
+            if (isFakePlayer(entryPlayer)) {
+                System.out.println("Adding fake player: " + entryPlayer.getUsername());
+                addFakePlayerEntry(targetPlayer, entryPlayer);
+            } else {
+                System.out.println("Adding real player: " + entryPlayer.getUsername());
+                addTablistEntry(targetPlayer, entryPlayer);
+            }
+        }
+        System.out.println("Total entries in tab list: " + targetPlayer.getTabList().getEntries().size());
+    }
+
+    private static void addFakePlayerEntry(Player targetPlayer, Player fakePlayer) {
+        Component displayName = Component.text(fakePlayer.getUsername())
+                .color(TextColor.color(255, 255, 0)); // 黄色
+
+        targetPlayer.getTabList().addEntry(
+                TabListEntry.builder()
+                        .tabList(targetPlayer.getTabList())
+                        .profile(fakePlayer.getGameProfile()) // プレイヤーの実際のGameProfileを使用
+                        .displayName(displayName)
+                        .latency(0) // レイテンシーを0に設定
+                        .gameMode(0) // ゲームモードを0（サバイバル）に設定
+                        .build()
+        );
+    }
+
+    private static boolean isFakePlayer(Player player) {
+        // プレイヤーが[BOT]チームに所属しているか確認します
+        return player.getUsername().startsWith("[BOT]");
+    }
+
+    private static Component getDisplayName(Player entryPlayer) {
+        String serverName = entryPlayer.getCurrentServer()
+                .map(server -> server.getServerInfo().getName())
+                .orElse("unknown");
+
+        Component serverPart = Component.text("[" + serverName + "] ")
+                .color(TextColor.color(0, 255, 0)); // 緑色
+
+        Component namePart = Component.text(entryPlayer.getUsername())
+                .color(TextColor.color(255, 255, 255)); // 白色
+
+        return serverPart.append(namePart);
+    }
+}

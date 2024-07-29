@@ -1,0 +1,15 @@
+[13:56:10] [main/INFO] [com.velocitypowered.proxy.VelocityServer]: Booting up Velocity 3.3.0-SNAPSHOT (git-a4476253-b411)...
+[13:56:10] [main/INFO] [com.velocitypowered.proxy.VelocityServer]: Loading localizations...
+[13:56:10] [main/INFO] [com.velocitypowered.proxy.network.ConnectionManager]: Connections will use NIO channels, Java compression, Java ciphers
+[13:56:10] [main/INFO] [com.velocitypowered.proxy.VelocityServer]: Loading plugins...
+[13:56:10] [main/INFO] [template]: TabListManager initialized
+[13:56:10] [main/INFO] [com.velocitypowered.proxy.plugin.VelocityPluginManager]: Loaded plugin template 1.0-SNAPSHOT by 
+[13:56:10] [main/INFO] [com.velocitypowered.proxy.VelocityServer]: Loaded 1 plugins
+[13:56:11] [Velocity Async Event Executor - #0/INFO] [net.dv8tion.jda.api.JDA]: Login Successful!
+[13:56:11] [JDA MainWS-WriteThread/INFO] [net.dv8tion.jda.internal.requests.WebSocketClient]: Connected to WebSocket
+[13:56:13] [JDA MainWS-ReadThread/INFO] [net.dv8tion.jda.api.JDA]: Finished Loading!
+[13:56:13] [Velocity Async Event Executor - #0/INFO] [com.velocitypowered.proxy.console.VelocityConsole]: Bot is ready!
+[13:56:13] [Velocity Async Event Executor - #0/INFO] [template]: Template plugin has been initialized!
+[13:56:13] [Velocity Async Event Executor - #0/INFO] [template]: 動的サーバーコマンドが登録されました。
+[13:56:13] [Netty NIO Boss #0/INFO] [com.velocitypowered.proxy.network.ConnectionManager]: Listening on /192.168.1.6:25565
+[13:56:13] [main/INFO] [com.velocitypowered.proxy.Velocity]: Done (3.62s)!
